@@ -77,15 +77,26 @@
     image
     (format nil "library/~A" image)))
 
-(defun sort-docker-tags (tags)
-  (sort tags
-    #'(lambda (a b)
-        (semver-<? (car a) (car b)))))
+(defun docker-registry-for (image)
+  (let ((slashes (count-if #'(lambda (c) (eql #\/ c))
+                           image)))
+    (cond ((< slashes 2)
+           *default-docker-registry*)
+          (t
+           (format nil "https://~A"
+                   (subseq image 0
+                     (position #\/ image :from-end t
+                       :end (position #\/ image :from-end t))))))))
 
-(defun docker-tags (c image)
-  (let* ((name (docker-image-name-proper image))
+(defun by-tag (a b)
+  (semver-<? (first a) (first b)))
+
+(defun docker-tags (image)
+  (let* ((c (docker-registry-connect
+              :url (docker-registry-for image)))
+         (name (docker-image-name-proper image))
          (tags (docker-get-all c `("repositories/" ,name "/tags/"))))
-    (sort-docker-tags
+    (sort
       (remove-if #'null
         (loop for tag in tags
               for ver = (parse-semver (cdr (assoc :name tag)))
@@ -93,4 +104,5 @@
               (list
                 (or ver '(0 0 0 0))
                 (cdr (assoc :name tag))
-                (cdr (assoc :tag--last--pushed tag))))))))
+                (cdr (assoc :tag--last--pushed tag)))))
+      #'by-tag)))

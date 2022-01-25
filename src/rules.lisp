@@ -45,7 +45,4 @@
 
 (defun rules-tags (rules)
   (loop for image being each hash-key of rules
-        collecting
-        (cons image
-              (docker-tags (docker-registry-connect)
-                           image))))
+        collecting (cons image (docker-tags image))))
