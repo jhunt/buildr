@@ -1,10 +1,13 @@
 (in-package #:buildr)
 
-(defparameter *default-docker-registry* "https://hub.docker.com/v2")
-(defparameter *default-docker-credentials*
-  '("filefrog" . "rY{hEf*Paib?At.hY)ch"))
+(defparameter *default-docker-registry*
+  "https://hub.docker.com/v2"
+  "The default Docker Registry API endpoint to connect to")
 
-(defvar *clients* (make-hash-table :test #'equal))
+(defvar *docker-clients*
+  (make-hash-table :test #'equal)
+  "Docker clients we have already sent requests from, indexed by URL.  We keep track of these so that we may remember the rate-limiting delay requirements, to avoid getting blocked.")
+
 (defclass docker-registry-client ()
  ((delay-until :initform nil)
   (url
@@ -12,20 +15,12 @@
    :initform *default-docker-registry*)
   (credentials
    :initarg :credentials
-   :initform *default-docker-credentials*)))
+   :initform nil)))
 
-(defun docker-client-delay (c)
-  (let ((until (slot-value c 'delay-until)))
-    (when until
-      (let ((nap (- until (unix-time))))
-        (format t "Docker registry API rate limit reached; sleeping ~Ds~%" nap)
-        (sleep nap))
-      (setf (slot-value c 'delay-until) nil))))
-
-(defun docker-registry-connect (&key (url *default-docker-registry*)
-                                     (credentials *default-docker-credentials*))
+(defun docker-registry-connect (&optional (url *default-docker-registry*)
+                                          credentials)
   (multiple-value-bind (client already-exists?)
-    (gethash url *clients*)
+    (gethash url *docker-clients*)
 
     (cond (already-exists?
            (setf (slot-value client 'credentials) credentials)
@@ -35,8 +30,16 @@
            (let ((client (make-instance 'docker-registry-client
                                         :url url
                                         :credentials credentials)))
-             (setf (gethash url *clients*) client)
+             (setf (gethash url *docker-clients*) client)
              client)))))
+
+(defun docker-client-delay (c)
+  (let ((until (slot-value c 'delay-until)))
+    (when until
+      (let ((nap (- until (unix-time))))
+        (format t "Docker registry API rate limit reached; sleeping ~Ds~%" nap)
+        (sleep nap))
+      (setf (slot-value c 'delay-until) nil))))
 
 (defun docker-registry-url (c url)
   (if (listp url)

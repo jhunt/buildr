@@ -1,6 +1,9 @@
 (in-package #:buildr)
 
-(defparameter *unix-epoch* (encode-universal-time 0 0 0 1 1 1970 0))
+(defparameter *unix-epoch*
+  (encode-universal-time 0 0 0 1 1 1970 0)
+  "The UNIX Epoch, corresponding to January 1st 1970, at midnight UTC")
+
 (defun unix-time ()
   "Return the current timestamp, expressed as seconds since the UNIX Epoch, Jan 1 1970 00:00:00Z"
   (- (get-universal-time)

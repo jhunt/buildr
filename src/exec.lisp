@@ -34,7 +34,7 @@
                       :input nil
                       :output '(:string :stripped t)
                       :error-output :output
-                      :ignore-error-status t) 
+                      :ignore-error-status t)
     (declare (ignore stderr))
     (values stdout exit)))
 
