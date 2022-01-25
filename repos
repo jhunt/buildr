@@ -1,0 +1,13 @@
+#| vim:ft=lisp
+ |#
+
+(:keys
+ (:jumper "/home/sa/.ssh/id.jumper.ed25519"
+  :ed25519 "/home/sa/.ssh/buildr.key"
+  :default "/home/sa/.ssh/id_rsa")
+
+ :repos
+ (;(:url "git@github.com:filefrog/ytdl"     :key :ed25519)
+  (:url "git@github.com:jhunt/buildr-test" :key :ed25519)
+  ;(:url "git@github.com:filefrog/clamav"   :key :ed25519)
+  ))

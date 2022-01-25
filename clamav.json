@@ -1,0 +1,307 @@
+{
+  "count": 231,
+  "next": "https://hub.docker.com/v2/repositories/filefrog/clamav/tags?page=2",
+  "previous": null,
+  "results": [
+    {
+      "creator": 414373,
+      "id": 123751067,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:0bfbfd859257aeb8dd7e0788880ef2130ac659df53f857d8c1dbc04cff90072d",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237888132,
+          "status": "inactive",
+          "last_pulled": "2021-12-02T15:14:32.650959Z",
+          "last_pushed": "2020-10-29T23:51:18.08609Z"
+        }
+      ],
+      "last_updated": "2020-10-29T23:51:18.08609Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201029",
+      "repository": 8634152,
+      "full_size": 237888132,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-12-02T15:14:32.650959Z",
+      "tag_last_pushed": "2020-10-29T23:51:18.08609Z"
+    },
+    {
+      "creator": 414373,
+      "id": 123573538,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:e32edda39ca932785891a1031d4d4e65525ae80edd1b240df18c44784ffc6358",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237857779,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.891615Z",
+          "last_pushed": "2020-10-28T23:53:22.614593Z"
+        }
+      ],
+      "last_updated": "2020-10-28T23:53:22.614593Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201028",
+      "repository": 8634152,
+      "full_size": 237857779,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.891615Z",
+      "tag_last_pushed": "2020-10-28T23:53:22.614593Z"
+    },
+    {
+      "creator": 414373,
+      "id": 123399295,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:fa9af4dd3108e4f5dc34a37fc0e057d05d18f53091f90067a2647d53bfb9403e",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237844355,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.928737Z",
+          "last_pushed": "2020-10-27T23:52:29.691855Z"
+        }
+      ],
+      "last_updated": "2020-10-27T23:52:29.691855Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201027",
+      "repository": 8634152,
+      "full_size": 237844355,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.928737Z",
+      "tag_last_pushed": "2020-10-27T23:52:29.691855Z"
+    },
+    {
+      "creator": 414373,
+      "id": 123229343,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:2936837834dd61be90416865d196a65b5e08bbebeeb2e922053c2d686577ec1d",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237816783,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.900575Z",
+          "last_pushed": "2020-10-26T23:52:03.005691Z"
+        }
+      ],
+      "last_updated": "2020-10-26T23:52:03.005691Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201026",
+      "repository": 8634152,
+      "full_size": 237816783,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.900575Z",
+      "tag_last_pushed": "2020-10-26T23:52:03.005691Z"
+    },
+    {
+      "creator": 414373,
+      "id": 123069446,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:f82b09c74382db7eceb29fe97e47a85bbfa02ff60e00f1413fbb5a040d52bbde",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237782884,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.881483Z",
+          "last_pushed": "2020-10-25T23:51:34.920667Z"
+        }
+      ],
+      "last_updated": "2020-10-25T23:51:34.920667Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201025",
+      "repository": 8634152,
+      "full_size": 237782884,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.881483Z",
+      "tag_last_pushed": "2020-10-25T23:51:34.920667Z"
+    },
+    {
+      "creator": 414373,
+      "id": 123022310,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:61a8c9e1b9a8cb7da0ba2a05d69fc830d8542b41ea4aaf80d07cca6a179e0268",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237764360,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.901336Z",
+          "last_pushed": "2020-10-24T23:51:14.313482Z"
+        }
+      ],
+      "last_updated": "2020-10-24T23:51:14.313482Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201024",
+      "repository": 8634152,
+      "full_size": 237764360,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.901336Z",
+      "tag_last_pushed": "2020-10-24T23:51:14.313482Z"
+    },
+    {
+      "creator": 414373,
+      "id": 122971642,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:f6fb0e6ff18208a2f54a89032fa511a3d5538727e75f4daef2f6a6a8456eaf85",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237730381,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.879768Z",
+          "last_pushed": "2020-10-23T23:51:42.493116Z"
+        }
+      ],
+      "last_updated": "2020-10-23T23:51:42.493116Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201023",
+      "repository": 8634152,
+      "full_size": 237730381,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.879768Z",
+      "tag_last_pushed": "2020-10-23T23:51:42.493116Z"
+    },
+    {
+      "creator": 414373,
+      "id": 122815502,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:0b069a3ccc2a8c5d48a7f16ca0f2f15792d58de25a56c0b1553295ffc85b1002",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237682600,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.868653Z",
+          "last_pushed": "2020-10-22T23:51:28.269942Z"
+        }
+      ],
+      "last_updated": "2020-10-22T23:51:28.269942Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201022",
+      "repository": 8634152,
+      "full_size": 237682600,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.868653Z",
+      "tag_last_pushed": "2020-10-22T23:51:28.269942Z"
+    },
+    {
+      "creator": 414373,
+      "id": 122626452,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:2959bfcaef20b66c1fdc117427d35affb556337f72bd5b30d8f3fc0ed66e3abb",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237649120,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.906375Z",
+          "last_pushed": "2020-10-21T23:51:34.999279Z"
+        }
+      ],
+      "last_updated": "2020-10-21T23:51:34.999279Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201021",
+      "repository": 8634152,
+      "full_size": 237649120,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.906375Z",
+      "tag_last_pushed": "2020-10-21T23:51:34.999279Z"
+    },
+    {
+      "creator": 414373,
+      "id": 122428560,
+      "image_id": null,
+      "images": [
+        {
+          "architecture": "amd64",
+          "features": "",
+          "variant": null,
+          "digest": "sha256:144c96795df3bee9eca592191aa292509648f03eeb04e6c18cf6a7b9e92731a5",
+          "os": "linux",
+          "os_features": "",
+          "os_version": null,
+          "size": 237649168,
+          "status": "inactive",
+          "last_pulled": "2021-07-02T11:49:49.90508Z",
+          "last_pushed": "2020-10-20T23:51:18.14548Z"
+        }
+      ],
+      "last_updated": "2020-10-20T23:51:18.14548Z",
+      "last_updater": 414373,
+      "last_updater_username": "filefrog",
+      "name": "v20201020",
+      "repository": 8634152,
+      "full_size": 237649168,
+      "v2": true,
+      "tag_status": "inactive",
+      "tag_last_pulled": "2021-07-02T11:49:49.90508Z",
+      "tag_last_pushed": "2020-10-20T23:51:18.14548Z"
+    }
+  ]
+}

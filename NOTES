@@ -1,0 +1,430 @@
+# vim:tw=66:ft=text
+
+The point of buildr is to:
+
+  1. rebuild docker images regularly
+  2. email failures with logs
+  3. detect and upgrade base images
+
+To facilitate (3), we have to be able to list upstream.  Ideally,
+this is a single process for ALL builds, so that we do not
+inundate upstream images servers.  We could also pull these down
+to our own docker registry, so that we can build off of known good
+images, even if upstream stops tracking them.
+
+  curl -v \
+    https://hub.docker.com/v2/repositories/filefrog/clamav/tags \
+  | jq -r .
+
+(use "library/$IMAGE" for 'unnamespaced' images like postgres)
+
+An easy way to track the tag changes is to put them in a
+relational table:
+
+  create table images (
+    name      text not null,
+    tag       text not null,
+    pushed_at datetime without time zone
+  )
+
+Then, we build a directed acyclic graph of our image dependencies,
+so that we can determine who needs to be rebuilt when an upstream
+changes.
+
+  create table dag (
+    image_name text not null,
+    depends_on text not null,
+  )
+
+We can do FROM-rewriting if we want, so that we can have build
+instructions that–at a point-in-time–specify a concrete versioned
+tag.  For example, building minimal-sbcl off of Alpine could be
+done against an X.Y-version of the upstream image:
+
+    FROM alpine:3.8
+    RUN apk add sbcl
+
+I have to conflicting needs here.  On one hand, I would really
+like to have minimal-sbcl derived from latest _stable_ alpine,
+whatever 3.x version that may be (or perhaps 4.x?).  We could
+depend on the upstream projects use of the `3` tag, as in:
+
+    FROM alpine:3
+    RUN apk add sbcl
+
+However, this suffers from a quieter, more insidious problem.
+Suppose that between alpine 3.8 and 3.9, the name of the sbcl
+package changed its name to cl-sbcl.  The next buildr run after
+alpine:3 starts pointing at alpine:3.9 (or later) will flag the
+build error, and we will apply a patch, but there's a time-travel
+issue.
+
+What happens if we try to rebuild on a Docker host that already
+has alpine:3, it's pointing at a 3.8 (or earlier) tag, and we run
+the `apk add` instruction with the new (3.9+) cl-sbcl name?  It
+breaks.  It breaks in a way that does *not* break if we had
+specified that we need 3.9 _or later_.
+
+So, I think we need to be as specific as we can on version-y tags
+for FROM base images, and we need some other process to rewrite
+the FROM line when new base image version-y tags are available.
+
+Luckily, Dockerfile syntax is pretty easy to parse apart.
+
+    FROM <sp>+ <tag> [<sp>+ AS <alias>] <eol>
+
+Since <tag> cannot contain interior space (ASCII 0x20), we can
+replace the second token in a space-delimited list, re-assemble
+it, and go.
+
+Or, in sed:
+
+  export OLD_BASE=alpine:3
+  export NEW_BASE=alpine:3.9
+  sed -ie "s/FROM  *$OLD_BASE[^ ]*/FROM $NEW_BASE/" Dockerfile
+
+Note that this does NOT work if the NEW_BASE tag isn't strictly
+newer than that of OLD_BASE; but that is really the bailiwick of
+the rest of buildr.  The FROM base rewriter component does not
+need to concern itself with semantic versioning.
+
+Equipped with the ability to re-base an image arbitrarily, we need
+a way of tracking dependencies, and allowable "upgrade" paths.
+For instance, it makes no sense to upgrade an image from nginx:1.7
+to alpine:3.9!  These are very different starting points.
+
+Specific Dockerfiles may have their own restrictions; one nginx
+derivative may be fine with *any* version; those usually start
+with `FROM nginx` (no tag; latest is fine).  Others may have
+specific major version requirements, i.e. `FROM nginx:1` or
+`FROM nginx:1.7`.  For these, we need additional constraints on
+the tags we consider as valid upgrade targets.
+
+  create table rules (
+    scope  text not null, -- the project / image / Dockerfile
+                          -- that this rule applies to.
+
+    base   text not null, -- the base image that we can upgrade
+    prefix text not null, -- optional prefix (i.e. "1" or "1.7"
+                                                   from above)
+  )
+
+We don't have to keep this in a table; we could just have it in
+a file local to the git repository:
+
+    $ cat .buildr.yaml
+    api/Dockerfile:
+      target: buildr-rebase-api
+      rebase:
+        - base: nginx
+        - base: alpine
+          prefix: 3
+
+We can simplify the YAML a bit by realizing that since neither
+image nor tag names can contain colons, we can just split a list
+of prefix-matching partial-tags like this:
+
+    $ cat .buildr.yaml
+    api/Dockerfile:
+      make: buildr-rebase-api
+      rebase:
+        - nginx
+        - alpine:3
+
+This means the same thing as the previous snippet, but with less
+typing needed.  As a bit of trivia, under this scheme, 'nginx' is
+identical to 'nginx:'.  It is also worth pointing out that these
+approaches (both YAML snippets and the database table) do not
+allow selective upgrades of re-used base images.  This probably
+needs a bit more explanation.
+
+Consider a multi-stage Docker file:
+
+    FROM ubuntu:21.10 AS downloader
+    RUN apt-get update \
+     && apt-get install -yy curl
+    RUN curl -o /the-file ...
+
+    FROM ubuntu:20.04
+    COPY --from=downloader /the-file /srv/datafile
+
+This recipe leverages multi-stage builds to avoid having to clean
+up after the `apt-get update` process-this can help keep image
+size under control.  Under buildr, the scope of base image updates
+is the entire Dockerfile, so when ubuntu:22.04 is released later
+this year, both of these base images would be upgraded to 22.04.
+
+In practice, this limitation is not expected to be show-stopping.
+
+Putting the rewrite rules with the git repository–as close to the
+Dockerfile itself as possible–is best.  It lets the developer
+choose, in the moment, how rebasing is handled by an unchanging
+central authority (buildr).  If we adopt the develop -> main
+branching strategy (which I like, although it needs better names),
+we can teach buildr to only ever pull the main branch, so that
+changes can be staged on the dev branch without incurring new
+published rebuilds.
+
+So, buildr:
+
+  1. Watches a set of repositories, pulling main branches
+  2. Assembles the set of upstream images to watch, from (1)
+  3. Watches (2)
+  4. For each new tag found during (3):
+
+     a. Identifies which repository in (1) is affected
+     b. For each such repository:
+
+          i. Rewrites the Dockerfile
+         ii. Runs the build **
+        iii. Reports errors
+
+**) We have not discussed the particulars of *how* a build is
+run.  Ideally, this should also be handled by the git repository,
+and we already have an excellent system for doing this: `make`.
+
+If we standardize on a make target name, we can expect each git
+repository to contain a Makefile that defines one or more tasks to
+carry out when building the image.  Here's one:
+
+    $ cat Makefile
+    buildr-rebase:
+      docker build -t my/image:edge
+      docker push my/image:edge
+      docker tag my/image:edge my/image:$(./version.sh)
+      docker push my/image:$(./version.sh)
+
+The buildr rebase process can just execute `make buildr-rebase`,
+note the exit code (0 = success) and collect logs for notification
+and review purposes.
+
+It would be nice if there were some environment variables to make
+it easier for the image developer to write their make target.
+Here are some ideas:
+
+  - BUILDR_GIT_SHA1 - The sha-1 commit-ish of HEAD.
+  - BUILDR_YYYYMMDD - The current date in YYYY-MM-DD format.
+  - BUILDR_BUILD_ID - A meaningless unique hexadecimal value.
+  - BUILDR_VERSION  - The x.y.z version of buildr itself
+
+Most of these are useful for adding labels and metadata to built
+images.  Any other environment variables that the developer needs
+to implement their buildr-rebase logic can be embedded directly
+into the Makefile using standard facilities.
+
+We can reserve the `BUILDR_` prefix for future use.
+
+As outputs of the rebase process, we have:
+
+  1) Did it succeed?  I.e., was the exit code 0?
+  2) How long did it take?
+  3) What was said during the build?  This is the combined
+     standard output and standard error streams from `make`.
+  4) What did we upgrade?  While not stored as text, it could be
+     represented to the developer / auditor as something like:
+
+       Upgraded nginx:3.8 => nginx:3.9
+
+This can be stored in two transactional tables:
+
+  create table builds (
+    id          text not null,
+    repo        text not null,
+    git_sha1    char(40) not null,
+    started_at  datetime with time zone not null,
+    finished_at datetime with time zone not null,
+    exit_code   integer not null,
+    logs        text not null
+  )
+
+(For performance, we can move `logs` into files in a directory
+     named after the builds.id column; i.e. /srv/logs/$BID/log)
+
+The `repo` field is a reference to a repos table.
+
+  create table repos (
+    id     text not null,
+    url    text not null,
+    branch text not null,
+  )
+
+Comitting to the git repo and pushing it back to origin will
+require some sort of authentication; we'll use SSH keys
+exclusively:
+
+  create table keys (
+    name text not null, -- i.e. "james@ipad"
+    data text not null,
+  )
+
+And we need an association table (in the Tony model):
+
+  create table keys_to_repos (
+    repo_id    text not null,
+    key_name   text not null,
+    started_at datetime with timezone not null,
+    ended_at   datetime with timezone not null,
+  )
+
+Configuration reload–which occurs implicitly at boot but may
+occur any time as the user wills–entails:
+
+  1. SELECT * FROM repos_with_keys;
+  2. for each repo:
+     a. clone repo with key
+     b. parse .buildr.yaml
+
+At the end of this process, we have a data structure in memory
+that relates tags to repositories and their rules.  In JSON:
+
+  {
+    "nginx": {
+      "a-repo-name": {
+        "api/Dockerfile": {
+          "prefix":   "",
+          "make-via": "buildr-rebase-api"
+        }
+      },
+
+      "another-repo": {
+        "Dockerfile": {
+          "prefix": "",
+          "make-via": "buildr-rebase"
+        }
+      }
+    },
+    "alpine": {
+      "a-repo-name": {
+        "api/Dockerfile": {
+          "prefix":   "3",
+          "make-via": "buildr-rebase-api"
+        }
+      }
+    }
+  }
+
+We'll call this data structure the "rules set."
+
+This structure allows us to efficiently collect a subset of things
+to do ("builds") based on changing image tags.  That process works
+like this:
+
+Once per build frequency (default: a day), buildr will look up all
+tags for all known images.  Given the above rules set, that is
+the set [nginx, alpine].  The resulting interim structure–known as
+the "tag dictionary"–would look like this:
+
+    {
+      "nginx":  [ "1.7", "1.8" ],
+      "alpine": [ "3.7", "3.8", "3.9", "4.0-rc1" ]
+    }
+
+Each key in the tag dictionary is an image.  Its value is the
+chronological ordering of tags, oldest first.  The tag dictionary
+makes it trivial to determine the latest tag for any given image,
+matching a specified prefix.  For example, if we know we want to
+rebase alpine, and we have a prefix of "3", we can iterate through
+the list like this:
+
+    - "3.7" matches prefix "3", "3.7" is latest
+    - "3.8" matches prefix "3", "3.8" is the new latest
+    - "3.9" matches prefix "3", "3.9" is the new latest
+    - "4.0-rc1" does not match prefix "3", "3.9" is still latest
+    - end of list reached!  "3.9" is THE latest
+
+With this algorithm, and the tag dictionary, we can start building
+our "rebase plan", a third data structure that will give us a
+per-repo set of changes to attempt to build.  It starts out empty:
+
+    {
+    }
+
+Let's look at the first image: nginx.  We have an entry in the
+rules set for nginx.  It defines two rules, each for a single
+repository.  We record that, flipping the primary key to be the
+repo:
+
+    {
+      "a-repo-name": {
+        "api/Dockerfile": {
+          "make-via": "buildr-rebase-api",
+          "rebase": [
+            { "from": "nginx *",
+                "to": "nginx:1.8" }
+          ]
+        }
+      },
+      "another-repo": {
+        "Dockerfile": {
+          "make-via": "buildr-rebase",
+          "rebase": [
+            { "from": "nginx *",
+                "to": "nginx:1.8" }
+          ]
+        }
+      }
+    }
+
+Next, we look at our second image, alpine.  We only have one rule
+in the rules set for alpine, and it is for a repository we have
+already seen, so we can append a rebase specification:
+
+    {
+      "a-repo-name": {
+        "api/Dockerfile": {
+          "make-via": "buildr-rebase-api",
+          "rebase": [
+            { "from": "nginx *",
+                "to": "nginx:1.8" },
+            { "from": "alpine:3[.-] *",     # this part is new
+                "to": "alpine:3.9" }
+          ]
+        }
+      },
+      "another-repo": {
+        "Dockerfile": {
+          "make-via": "buildr-rebase",
+          "rebase": [
+            { "from": "nginx", "to": "nginx:1.8" }
+          ]
+        }
+      }
+    }
+
+Coming to the end of our tag dictionary, we know we have compile
+the entirety of our rebase plan.  Executing on it is a simple
+matter of walking the plan, rewriting Dockerfiles, and making.
+
+There is a slight wrinkle when it comes to rebasing multiple FROM
+directives in a single Dockerfile.  Consider this recipe:
+
+    FROM ffmpeg-rtsp AS stage1
+    ...
+
+    FROM ffmpeg
+    ...
+
+There is no way to handle this well.  If we replace 'ffmpeg' with
+'ffmpeg:x.y.z', the stage1 FROM changes to the (probably broken)
+image 'ffmpeg:x.y.z-rtsp'.  For now, I think we can ignore this,
+but it is worth noting in the build failures.
+
+One last thing to talk about is the git interaction.  After we
+make Dockerfile substitutions based on the rebase plan, we need to
+commit those changes before we issue the build command.  This
+approach of commit-then-build makes the SHA-1 commit ID available
+to the build process.  We don't have to _push_ the changes–we
+won't, if the build fails!
+
+    1. Provision BUILDR_BUILD_ID
+    2. Apply the rebase plan to the repository working copy
+    3. Commit  (the commit message should contain the build id
+                    and a summary of the applied rebase plan)
+    4. Build   (the commit ID is available now)
+    5. On success, push to origin/BRANCH
+    6. On failure, drop the staged commit
+    7. Notify
+
+As a special optimization, we can halt the process early if there
+are no detected changes after step (2).  If there's nothing to
+commit, a Docker build is usually a no-op.
