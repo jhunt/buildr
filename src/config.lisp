@@ -73,9 +73,10 @@
 
     (when (and keys repos)
       (loop for repo in repos collecting
-            `(:url    ,(getf repo :url)
-              :branch ,(or (getf repo :branch)
-                           "master")
-              :key    ,(getf keys
-                             (or (getf repo :key)
-                                 :default)))))))
+            (make-repo
+              :url    (getf repo :url)
+              :branch (or (getf repo :branch)
+                          "master")
+              :key    (getf keys
+                            (or (getf repo :key)
+                                :default)))))))

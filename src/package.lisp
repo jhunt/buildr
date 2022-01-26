@@ -2,7 +2,7 @@
 ;;; src/package.lisp
 ;;; ©2022 James Hunt
 ;;;
-;;; This file defines the BUILR package, its
+;;; This file defines the BUILDR package, its
 ;;; implicitly-included downstream dependencies,
 ;;; and its exported functions, variables, etc.
 ;;;

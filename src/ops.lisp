@@ -1,6 +1,16 @@
+;;;
+;;; src/ops.lisp
+;;; ©2022 James Hunt
+;;;
+;;; This file contains operational routines
+;;; intended to be used over something like a
+;;; SWANK connection, for field service.
+;;;
+
 (in-package #:buildr)
 
 (defun dump-jobs (jobs)
+  "Print out pertinent job information for a list of JOBS"
   (loop for (repo dockerfile) being each hash-key of jobs
         for job being each hash-value of jobs
         do
@@ -13,9 +23,10 @@
                 (job-target job))
         (format t "~{  - ~A~%~}" (job-rebase job))))
 
-(defun dump-rules-set (rules-set)
-  (loop for image being each hash-key of rules-set
-        for repos being each hash-value of rules-set
+(defun dump-rules (rules)
+  "Print out pertinent build rule information for a RULES list"
+  (loop for image being each hash-key of rules
+        for repos being each hash-value of rules
         do
         (loop for repo being each hash-key of repos
               for specs being each hash-value of repos

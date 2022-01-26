@@ -1,3 +1,12 @@
+;;;
+;;; src/utilities.lisp
+;;; ©2022 James Hunt
+;;;
+;;; This file contains helpful utilies that make
+;;; the rest of the BUILDR implementation easier.
+;;; Lots of these, like KEYWORDF and INTERNF, aid
+;;; our meta-programming efforts.
+
 (in-package #:buildr)
 
 (defun keywordf (&rest args)
@@ -77,14 +86,6 @@
              (track+/rest (car keys) h value (cdr keys)))))))
 
 (defun track+ (keys hash value)
+  "Set multiple levels of KEYS in HASH to VALUE"
   (if keys
     (track* (car keys) hash value (cdr keys))))
-
-(defun get+ (keys hash)
-  (cond ((null keys) nil)
-        ((null (cdr keys))
-         (gethash (car keys) hash))
-        (t
-         (get+ (cdr keys)
-               (gethash (car keys) hash)))))
-

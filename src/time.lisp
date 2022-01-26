@@ -1,3 +1,20 @@
+;;;
+;;; src/time.lisp
+;;; ©2022 James Hunt
+;;;
+;;; This file defines routines for dealing with
+;;; time quantities, intervals, and UNIX Epoch
+;;; timestamps.
+;;;
+;;; Of particular interest are TIMER/SYNC and
+;;; TIMER/ASYNC, two functions that take a delay
+;;; quantity (specified in seconds) and a function
+;;; and then alternate between delaying and
+;;; calling that function.  The TIMER/SYNC variant
+;;; runs in the foreground; TIME/ASYNC executes in
+;;; a background thread.
+;;;
+
 (in-package #:buildr)
 
 (defparameter *unix-epoch*

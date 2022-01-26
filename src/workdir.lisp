@@ -1,3 +1,22 @@
+;;;
+;;; src/workdir.lisp
+;;; ©2022 James Hunt
+;;;
+;;; This file defines routines related to creating
+;;; and disposing of temporary working directories
+;;; on the filesystem, mostly so that we can clone
+;;; upstream git repositories into them and then
+;;; rm -rf them when we're through using them.
+;;;
+;;; Most people only care about the WITH-WORKDIR
+;;; macro, which wraps an UNWIND-PROTECT and the
+;;; setup / teardown calls.  It is similar in spirit
+;;; to WITH-OPEN-FILE:
+;;;
+;;;    (with-workdir (dir)
+;;;      (do-something-in dir))
+;;;
+
 (in-package #:buildr)
 
 (defparameter *workdir-root* "/tmp/buildr/")

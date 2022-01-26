@@ -1,3 +1,16 @@
+;;;
+;;; src/git.lisp
+;;; ©2022 James Hunt
+;;;
+;;; This file defines routines and macros for
+;;; dealing with the git version control system
+;;; through its `git' command-line utility.
+;;;
+;;; It relies heavily on the primitives defined
+;;; in src/exec.lisp; notably RUN, SYSTEM, and
+;;; WITH-ENV.
+;;;
+
 (in-package #:buildr)
 
 (defmacro git (&rest args)

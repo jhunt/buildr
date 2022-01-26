@@ -1,15 +1,34 @@
+;;;
+;;; src/job.lisp
+;;; ©2022 James Hunt
+;;;
+;;; This file defines routines for dealing with
+;;; build jobs.  In BUILDR, a job is defined as
+;;; one or more image rebase operations, carried
+;;; out against a single Dockerfile, in a git
+;;; repository using a make target.
+;;;
+;;; Since a single git repository may define lots
+;;; of images (through multiple Dockerfiles),
+;;; and since each of those may have different
+;;; base image restrictions, a git repo may end
+;;; up defining multiple jobs.
+;;; 
+
 (in-package #:buildr)
 
 (defsimpleclass job
   (id repo dockerfile prefix rebase target))
 
 (defun job-add-rebase (job image tag)
+  "Adds a base image rebase operation to this job"
   (setf (job-rebase job)
         (append
           (list (cons image tag))
           (job-rebase job))))
 
 (defun rewrite-from-line (line image prefix tag)
+  "Rewrite the FROM line for a given IMAGE, if the optional PREFIX matches, such that the new base image is IMAGE:TAG"
   (nth-value 0
     (if (equal "" prefix)
       (ppcre:regex-replace-all
@@ -22,6 +41,7 @@
         (format nil "\\1~A:~A\\3" image tag)))))
 
 (defun rebase-dockerfile (path image prefix tag)
+  "Rebase all FROM lines in a single Docker file, if they match IMAGE[:PREFIX], to IMAGE:TAG"
   (let ((temp (format nil "~A~~" path)))
     (with-open-file (in path)
       (with-open-file (out temp :direction :output
@@ -37,9 +57,11 @@
     (rename-file temp path)))
 
 (defmacro make-in (workdir &rest args)
+  "Sets up a make command invocation to take place from WORKDIR"
   `(list "make" "-C" (namestring ,workdir) ,@args))
 
 (defun run-job (job)
+  "Run the rebase operations defined in JOB"
   (format t "running job ~A~%" (job-id job))
   (format t "    in repo ~A~%" (repo-url (job-repo job)))
   (format t "     branch ~A~%" (repo-branch (job-repo job)))
@@ -48,18 +70,19 @@
   (format t "   rebasing ~S~%" (job-rebase job))
   (loop for (image . tag) in (job-rebase job)
         do (format t "    - ~A => ~A:~A~%" image image tag))
-  (with-workdir (wd)
+
+  (with-fresh-repo (repo (job-repo job))
     ; clone the repo
-    (repo-clone (job-repo job) wd)
+    (repo-clone repo)
 
     ; rebase all dockerfiles given known tags
     (loop for (image . tag) in (job-rebase job)
-          with path = (format nil "~A/~A" wd (job-dockerfile job))
+          with path = (repo-path repo (job-dockerfile job))
           do (rebase-dockerfile path image (job-prefix job) tag))
 
-    (when (git-dirty? wd)
+    (when (repo-dirty? repo)
       ; commit changes (to get the sha1)
-      (git-commit wd
+      (repo-commit repo
         (with-output-to-string (msg)
           (format msg "[ci/cd] Buildr #~D Base Images Updates~%"
                   (job-id job))
@@ -73,18 +96,20 @@
 
       ; do the build
       (with-env ((buildr-build-id (job-id-job))
-                 (buildr-git-sha1 (git-head-sha1 wd)))
-        (multiple-value-bind (stdout exit)
-          (system (make-in wd (job-target job)))
+                 (buildr-git-sha1 (repo-head-sha1 repo)))
+        (multiple-value-bind
+          (stdout exit)
+          (system (make-in (repo-workdir repo) (job-target job)))
 
           (format t "output:~%~A~%" stdout)
           (format t "exited ~D~%" exit)
 
           (if (zerop exit)
             ; push the changes if the make succeeded
-            (repo-push (job-repo job) wd)))))))
+            (repo-push repo)))))))
 
 (defun find-appropriate-tag (image stipulation all-tags)
+  "Finds the latest IMAGE tag that still matches the STIPULATION (a semver minimum requirement), by looking through ALL-TAGS"
   (let ((spec (parse-semver stipulation))
         (tags (sort-docker-tags
                 (cdr (assoc image all-tags :test #'equal))))
@@ -99,6 +124,7 @@
     (and candidate (second candidate))))
 
 (defmacro three-deep (((a b c v) hash) &body body)
+  "Recurses through a hashtable of hashtables of hashtables, to extract the innermost (bottom-most?) value."
   (with-gensyms (hh a-b b-c)
     `(let ((,hh ,hash))
        (loop for ,a being each hash-key in ,hh
@@ -112,7 +138,8 @@
                          do ,@body))))))
 
 (defun build-jobs (last-build-id rules tags)
- (let ((jobs (make-hash-table :test #'equalp)))
+  "Construct a list of jobs, sequentially numbered, using the RULES extracted from watched git repositories and the TAGS taken from upstream Docker registries"
+  (let ((jobs (make-hash-table :test #'equalp)))
     (three-deep ((image repo dockerfile spec) rules)
       (format t "image:      ~A~%" image)
       (format t "repo:       ~A~%" repo)
