@@ -88,4 +88,4 @@
 (defun track+ (keys hash value)
   "Set multiple levels of KEYS in HASH to VALUE"
   (if keys
-    (track* (car keys) hash value (cdr keys))))
+    (track+/rest (car keys) hash value (cdr keys))))

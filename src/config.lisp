@@ -67,9 +67,9 @@
       ; pre-connect to all registries
       (loop for registry in docker do
             (docker-registry-connect
-              (getf docker :url)
-              (cons (getf docker :username)
-                    (getf docker :password)))))
+              (getf registry :url)
+              (cons (getf registry :username)
+                    (getf registry :password)))))
 
     (when (and keys repos)
       (loop for repo in repos collecting

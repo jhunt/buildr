@@ -95,7 +95,7 @@
                            image image tag))))
 
       ; do the build
-      (with-env ((buildr-build-id (job-id-job))
+      (with-env ((buildr-build-id (job-id job))
                  (buildr-git-sha1 (repo-head-sha1 repo)))
         (multiple-value-bind
           (stdout exit)
@@ -111,8 +111,8 @@
 (defun find-appropriate-tag (image stipulation all-tags)
   "Finds the latest IMAGE tag that still matches the STIPULATION (a semver minimum requirement), by looking through ALL-TAGS"
   (let ((spec (parse-semver stipulation))
-        (tags (sort-docker-tags
-                (cdr (assoc image all-tags :test #'equal))))
+        (tags (sort (cdr (assoc image all-tags :test #'equal))
+                    #'by-tag))
         (candidate nil))
     (loop for tag in tags do
           (unless spec

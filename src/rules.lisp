@@ -26,7 +26,7 @@
           (format t "    using key @~A~%"  (repo-key repo))
           (format t "  considering ~A branch~%" (repo-branch repo))
 
-          (with-fresh-repo (r repo)
+          (with-fresh-repo (repo repo)
             (repo-clone repo)
             (format t "HEAD is at ~A~%" (repo-head-sha1 repo))
             (let ((c (repo-read-config repo)))

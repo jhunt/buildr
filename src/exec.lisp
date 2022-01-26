@@ -62,29 +62,31 @@
 
 (defun env-name (sym)
   "Converts the symbol SYM into a string suitable for use as a UNIX environment variable name"
-  (substitute #\_ #\- (format nil "~Ae" sym)))
+  (substitute #\_ #\- (format nil "~A" sym)))
 
-(defun env-val (thing)
+(defun env-value (thing)
   "Converts THING into a string suitable for use as a UNIX environment variable value"
   (format nil "~A" thing))
 
 (defmacro with-env (decls &body body)
   "Temporarily overrides the current UNIX environment using DECLS, a list of (name value) sub-lists. NAME must be a symbol (it will be run through ENV-NAME); VALUE can be anything (it will be run through ENV-VALUE)."
   (let* ((syms (gensyms decls))
-         (vars (mapcar (f+ #'env-name #'car) decls))
-         (vals (mapcar (f+ #'env-val #'cadr) decls)))
+         (vars (mapcar (f+ #'env-name #'first) decls))
+         (vals (mapcar #'second decls)))
     `(let ,(mapcar #'(lambda (sym var)
                        `(,sym (uiop:getenv ,var)))
                    syms vars)
        (unwind-protect
          (progn
            ,@(mapcar #'(lambda (var val)
-                         `(setf (uiop:getenv ,var) ,val))
+                         `(setf (uiop:getenv ,var)
+                                (env-value ,val)))
                      vars vals)
            ,@body)
          (progn
            ,@(mapcar #'(lambda (var sym)
-                         `(setf (uiop:getenv ,var) ,sym))
+                         `(and ,sym
+                               (setf (uiop:getenv ,var) ,sym)))
                      vars syms))))))
 
 (defun system (command)

@@ -46,7 +46,10 @@
 (defun save-last-build-id (id)
   "Save the last build ID to memory and disk"
   (setf *last-build-id* id)
-  (with-open-file (out #p".buildr.id")
+  (with-open-file (out #p".buildr.id"
+                       :direction :output
+                       :if-exists :overwrite
+                       :if-does-not-exist :create)
     (write id :stream out)))
 
 (defun run/1 (config-path)

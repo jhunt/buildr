@@ -15,9 +15,9 @@
 (defsimpleclass repo
   (url key branch workdir))
 
-(defun repo-path (relative)
+(defun repo-path (repo relative)
   "Formulate a new path, relative to the repository working directory"
-  (format nil "~A/~A" (repo-workdir) relative))
+  (format nil "~A/~A" (repo-workdir repo) relative))
 
 (defmacro with-fresh-repo ((var repo) &body body)
   "Allocates a fresh copy of REPO, with a new temporary WORKDIR bound"
